@@ -8,6 +8,14 @@
 
 using namespace std;
 
+/*
+  mergeFiles takes 2 sorted input files and created a thrid file
+  that will have the merged sorted data.
+  string inFile1 - input
+  string inFile2 - input
+  string outFile - input
+  Does not return anything back to the caller
+*/
 void mergeFiles(string inFile1, string inFile2, string outFile) {
     // Open Files
     ifstream fin(inFile1);
@@ -48,6 +56,16 @@ void mergeFiles(string inFile1, string inFile2, string outFile) {
     }//endwhile
 }//endmethod
 
+
+/*
+  mergefiles_pass: Is a recursive function that used for each pass
+  string input_prefix - input
+  int fileCount - input
+  int newFileCount - input
+  returns back the number of intermediatery temp files that were created for the pass
+
+  NOTE: All intermediate temp files are automatically deleted.
+*/
 int mergefiles_pass(string input_prefix, int fileCount, int newFileCount){
 
     string file_a=input_prefix;
@@ -74,18 +92,18 @@ int mergefiles_pass(string input_prefix, int fileCount, int newFileCount){
 
     if (fileCount == 1){
         //We have reached the end of the merge
-        cout<< "End of the all merges: " <<endl;
+        cout<< "End of the all merge for prefix: [" <<input_prefix<<"?.tmp]"<<endl;
         std::ifstream infile(file_a.c_str());
         if (infile.good()){
             rename(file_a.c_str(), "final_sorted.dat");
-            cout<<" File sorted and stored in ========> final_sorted.dat" <<endl;
+            cout<<" Intermediatery merge file complete..." <<endl;
         } else{
             cout<<" Error: Something went wrong..."<<endl;
         }
         return newFileCount-1; 
     }
 
-    mergeFiles(file_a, file_b, output_file);       
+    mergeFiles(file_a, file_b, output_file);   
     std::remove(file_a.c_str()); 
     std::remove(file_b.c_str()); 
     if (fileCount<=2){
@@ -97,6 +115,9 @@ int mergefiles_pass(string input_prefix, int fileCount, int newFileCount){
     }
 }
 
+/*
+  Helper function to split the given string into words using given delimiter
+*/
 void split(const string &s, char delim, vector<string> &elems) {
     stringstream ss(s);
     string item;
@@ -105,12 +126,28 @@ void split(const string &s, char delim, vector<string> &elems) {
     }
 }
 
-int main()
-{   
-    int memSize = 10000;
+/* The main function that calls all the recursive function 
+    input - int - memorySize - Size of memory available for use.
+    input - string - input txt file to be sorted.
+
+    The basic logic is the input file is chunked into N smaller files
+    where size of each chumk is not more than memorySize.
+    - Each file is then loaded into memory to do in-memory sort.
+    - And all the sorted chuked files are merged back into one file again.
+
+    Caveat: If a single word/string is bigger than given memorySize then
+    we are not taking care of that. 
+
+    The input text file is parsed line by line and the each string/word is 
+    extracted. the word delimiter is space, tab, or new line.
+
+*/
+int sort_file(int memorySize, string inputFile)
+{       
+    int memSize = memorySize;
 
 	// Open your text file
-	std::ifstream file("book.dat");
+	std::ifstream file(inputFile);
 	std::vector<std::string> rows;
     
     int filledBuffer=0;
@@ -199,8 +236,39 @@ int main()
         tot = mergefiles_pass(pass,tot,1);
         pass = pass+"pass_";
     }  
-    cout <<endl;
-    return 0;
 
-	getchar();
+
+    std::ifstream infile("final_sorted.dat");
+    if (infile.good()){
+        cout<<endl;
+        cout<<"Success: Sorting complete and sorted file is =======> final_sorted.dat" <<endl;
+        cout<<"Note all temp files that were created are deleted automatically." <<endl;
+        cout<<"------"<<endl;
+        return 0; // success
+    } else{
+        cout<<endl;
+        cout<<" Error: Something went wrong..."<<endl;
+        cout<<"------"<<endl;
+        return -1; //failure
+    }
+
+
+    return 0;
+}
+
+int main(){
+
+    cout<<"----- External Sort [Start] ------"<<endl<<endl;
+    try{
+        int memSize;
+        string fileName;
+        cout<< "Enter the available memory in bytes: ";
+        cin >> memSize;
+        cout<< "Enter the file name (it has to be in the current directory): ";
+        cin >> fileName;
+        return sort_file(memSize, fileName);
+    }catch(std::exception const& e){
+        std::cerr << e.what() << std::endl;
+        return -1;
+    }
 }
